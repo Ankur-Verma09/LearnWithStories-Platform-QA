@@ -15,28 +15,32 @@ $env:CLOUDFLARE_QA_WORKER_NAME = "learn-with-stories-qa"
 $env:CLOUDFLARE_QA_URL = "https://learn-with-stories-qa.aaankurankur.workers.dev"
 ```
 
-Confirm Python and Node.js are available:
+Confirm Node.js and the existing `uv.exe` installation are available:
 
 ```powershell
-py -3.11 --version
 node --version
-npx --version
+npx.cmd --version
+$uv = "$env:LOCALAPPDATA\hermes\bin\uv.exe"
+& $uv --version
 ```
 
-Install the Python package:
+Install Python 3.11 and the test package through `uv`:
 
 ```powershell
-py -3.11 -m venv .venv
+& $uv python install 3.11
+& $uv venv --python 3.11 .venv
+& $uv pip install --python .\.venv\Scripts\python.exe -e ".[test]"
 .\.venv\Scripts\Activate.ps1
-python -m pip install -e ".[test]"
 ```
+
+Use `npx.cmd` throughout the demo. This bypasses the blocked `npx.ps1` wrapper without changing the Windows execution policy.
 
 ## One-time QA Worker bootstrap
 
 Create a healthy baseline before demonstrating rollback:
 
 ```powershell
-npx --yes wrangler@4.37.1 deploy `
+npx.cmd --yes wrangler@4.37.1 deploy `
   --config fixtures/healthy/wrangler.jsonc `
   --name learn-with-stories-qa
 ```
@@ -131,11 +135,11 @@ Push `assessment/cloudflare-platform-qa` to GitHub. Add the four Cloudflare valu
 If the demo terminal closes during a failure test, find the healthy version and restore it:
 
 ```powershell
-npx --yes wrangler@4.37.1 versions list `
+npx.cmd --yes wrangler@4.37.1 versions list `
   --name learn-with-stories-qa `
   --json
 
-npx --yes wrangler@4.37.1 rollback <healthy-version-id> `
+npx.cmd --yes wrangler@4.37.1 rollback <healthy-version-id> `
   --name learn-with-stories-qa `
   --message "demo recovery"
 ```

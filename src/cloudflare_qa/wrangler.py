@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 import subprocess
 import time
 from typing import Callable
@@ -24,8 +25,9 @@ class WranglerUploader:
         if not config.is_file() or not entrypoint.is_file():
             raise ConfigurationError("Fixture must contain wrangler.jsonc and worker.js")
 
+        npx = "npx.cmd" if os.name == "nt" else "npx"
         command = [
-            "npx",
+            npx,
             "--yes",
             "wrangler@4.37.1",
             "versions",
@@ -56,4 +58,3 @@ class WranglerUploader:
                 return version_id
             self.sleeper(1)
         raise UploadError("Uploaded version did not appear in the Cloudflare version list")
-

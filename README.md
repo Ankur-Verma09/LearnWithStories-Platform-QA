@@ -67,13 +67,13 @@ docs/                     Test specification and remaining work
 
 ## Prerequisites
 
-- Python 3.11 or newer
+- Python 3.11 or newer, installed directly or through `uv`
 - Node.js 20 or newer
 - A Cloudflare account with Workers enabled
 - A dedicated QA Worker name
 - An API token scoped to Workers Scripts Edit for the required account
 
-Wrangler is executed as `npx --yes wrangler@4.37.1`; a global installation is not required.
+Wrangler is executed as `npx --yes wrangler@4.37.1` on Linux and `npx.cmd --yes wrangler@4.37.1` on Windows; a global installation is not required.
 
 ## Local setup
 
@@ -85,6 +85,18 @@ py -3.11 -m venv .venv
 python -m pip install --upgrade pip
 python -m pip install -e ".[test]"
 ```
+
+If the Windows `py` launcher is unavailable, use the existing `uv.exe` installation:
+
+```powershell
+$uv = "$env:LOCALAPPDATA\hermes\bin\uv.exe"
+& $uv python install 3.11
+& $uv venv --python 3.11 .venv
+& $uv pip install --python .\.venv\Scripts\python.exe -e ".[test]"
+.\.venv\Scripts\Activate.ps1
+```
+
+PowerShell may block `npx.ps1` under a restricted execution policy. Use `npx.cmd` instead; changing the machine-wide execution policy is not required.
 
 Run the deterministic suite:
 
@@ -165,8 +177,8 @@ Each failure test records the version that was active before it starts. Its clea
 If a live test is interrupted, list the recent versions and restore the known healthy version:
 
 ```powershell
-npx --yes wrangler@4.37.1 versions list --name learn-with-stories-qa --json
-npx --yes wrangler@4.37.1 rollback <version-id> --name learn-with-stories-qa --message "manual test recovery"
+npx.cmd --yes wrangler@4.37.1 versions list --name learn-with-stories-qa --json
+npx.cmd --yes wrangler@4.37.1 rollback <version-id> --name learn-with-stories-qa --message "manual test recovery"
 ```
 
 ## Scope decisions
