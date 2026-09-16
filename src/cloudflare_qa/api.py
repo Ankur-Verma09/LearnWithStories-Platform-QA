@@ -1,4 +1,5 @@
 import json
+import socket
 from typing import Any, Callable
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
@@ -16,6 +17,8 @@ def _default_transport(request: Request, timeout: float) -> tuple[int, bytes]:
             return response.status, response.read()
     except HTTPError as exc:
         return exc.code, exc.read()
+    except (TimeoutError, socket.timeout) as exc:
+        raise CloudflareApiError(0, "Cloudflare API request timed out") from exc
     except URLError as exc:
         raise CloudflareApiError(0, f"Cloudflare API is unavailable: {exc.reason}") from exc
 

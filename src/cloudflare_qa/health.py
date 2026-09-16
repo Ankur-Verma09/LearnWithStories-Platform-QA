@@ -55,7 +55,9 @@ class HealthProbe:
         )
         response = self.transport(request, timeout)
         if response.status != 200:
-            raise HealthCheckError(f"Health endpoint returned HTTP {response.status}")
+            raise HealthCheckError(
+                f"Health endpoint returned HTTP {response.status}", response.status
+            )
         try:
             payload = json.loads(response.body)
         except json.JSONDecodeError as exc:

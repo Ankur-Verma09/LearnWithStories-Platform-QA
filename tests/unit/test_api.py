@@ -1,7 +1,9 @@
 import json
+import socket
 
 import pytest
 
+from cloudflare_qa import api
 from cloudflare_qa.api import CloudflareClient
 from cloudflare_qa.errors import CloudflareApiError
 
@@ -59,4 +61,16 @@ def test_surfaces_cloudflare_error_without_token():
 
     assert error.value.status == 403
     assert str(error.value) == "Authentication error"
+
+
+def test_reports_cloudflare_timeout(monkeypatch):
+    def time_out(request, timeout):
+        raise socket.timeout()
+
+    monkeypatch.setattr(api, "urlopen", time_out)
+
+    with pytest.raises(CloudflareApiError, match="timed out") as error:
+        api._default_transport(object(), 1)
+
+    assert error.value.status == 0
 

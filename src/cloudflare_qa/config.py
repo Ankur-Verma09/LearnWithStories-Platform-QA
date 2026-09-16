@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 import os
+from urllib.parse import urlparse
 
 from .errors import ConfigurationError
 
@@ -27,4 +28,7 @@ class Settings:
             raise ConfigurationError("The production Worker cannot be used by this suite")
         if not values["worker_url"].startswith("https://"):
             raise ConfigurationError("CLOUDFLARE_QA_URL must use HTTPS")
+        hostname = urlparse(values["worker_url"]).hostname or ""
+        if not hostname.startswith(f"{values['worker_name']}."):
+            raise ConfigurationError("CLOUDFLARE_QA_URL does not match the QA Worker name")
         return cls(**values)

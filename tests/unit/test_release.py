@@ -1,6 +1,15 @@
 from pathlib import Path
 
-from cloudflare_qa.errors import HealthCheckError, HealthCheckTimeout
+import pytest
+
+from cloudflare_qa.errors import (
+    CloudflareApiError,
+    ConcurrentDeploymentError,
+    ConfigurationError,
+    HealthCheckError,
+    HealthCheckTimeout,
+    RollbackError,
+)
 from cloudflare_qa.release import ReleaseController
 
 
@@ -91,4 +100,71 @@ def test_reports_failure_without_rollback_when_no_baseline_exists():
     assert result.status == "failed"
     assert result.rolled_back is False
     assert result.previous_version_id is None
+
+
+def test_rolls_back_when_health_endpoint_is_unavailable():
+    client = FakeClient()
+
+    result = controller(client, HealthCheckError("endpoint unavailable")).deploy(
+        Path("fixture"), "qa-worker", "healthy", 2
+    )
+
+    assert result.status == "failed"
+    assert result.error_type == "server_error"
+    assert result.rolled_back is True
+    assert client.active == "stable"
+
+
+def test_reports_original_error_when_rollback_fails():
+    class RollbackFailingClient(FakeClient):
+        def create_deployment(self, version_id, message):
+            if version_id == "stable":
+                raise CloudflareApiError(503, "rollback API unavailable")
+            return super().create_deployment(version_id, message)
+
+    client = RollbackFailingClient()
+
+    with pytest.raises(RollbackError, match="HTTP 500.*rollback API unavailable"):
+        controller(client, HealthCheckError("HTTP 500")).deploy(
+            Path("fixture"), "qa-worker", "healthy", 2
+        )
+
+
+def test_stops_when_another_deployment_changes_active_version():
+    class ConcurrentClient(FakeClient):
+        def __init__(self):
+            super().__init__()
+            self.reads = 0
+
+        def active_version(self):
+            self.reads += 1
+            return "stable" if self.reads == 1 else "other-release"
+
+    client = ConcurrentClient()
+
+    with pytest.raises(ConcurrentDeploymentError, match="changed during upload"):
+        controller(client).deploy(Path("fixture"), "qa-worker", "healthy", 2)
+
+    assert client.deployments == []
+
+
+@pytest.mark.parametrize("timeout", [0, -1])
+def test_rejects_nonpositive_timeout_before_cloudflare_call(timeout):
+    class UnexpectedClient:
+        def active_version(self):
+            raise AssertionError("Cloudflare must not be called")
+
+    with pytest.raises(ConfigurationError, match="greater than zero"):
+        controller(UnexpectedClient()).deploy(
+            Path("fixture"), "qa-worker", "healthy", timeout
+        )
+
+
+def test_rejects_empty_expected_marker_before_cloudflare_call():
+    class UnexpectedClient:
+        def active_version(self):
+            raise AssertionError("Cloudflare must not be called")
+
+    with pytest.raises(ConfigurationError, match="cannot be empty"):
+        controller(UnexpectedClient()).deploy(Path("fixture"), "qa-worker", " ", 2)
 

@@ -8,12 +8,15 @@ def test_reads_qa_configuration(monkeypatch):
     monkeypatch.setenv("CLOUDFLARE_ACCOUNT_ID", "account")
     monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "token")
     monkeypatch.setenv("CLOUDFLARE_QA_WORKER_NAME", "learn-with-stories-qa")
-    monkeypatch.setenv("CLOUDFLARE_QA_URL", "https://qa.example.workers.dev/")
+    monkeypatch.setenv(
+        "CLOUDFLARE_QA_URL",
+        "https://learn-with-stories-qa.example.workers.dev/",
+    )
 
     settings = Settings.from_environment()
 
     assert settings.worker_name == "learn-with-stories-qa"
-    assert settings.worker_url == "https://qa.example.workers.dev"
+    assert settings.worker_url == "https://learn-with-stories-qa.example.workers.dev"
     assert "token" not in repr(settings)
 
 
@@ -41,3 +44,16 @@ def test_reports_all_missing_configuration(monkeypatch):
 
     assert "account_id" in str(error.value)
     assert "api_token" in str(error.value)
+
+
+def test_rejects_url_for_a_different_worker(monkeypatch):
+    monkeypatch.setenv("CLOUDFLARE_ACCOUNT_ID", "account")
+    monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "token")
+    monkeypatch.setenv("CLOUDFLARE_QA_WORKER_NAME", "learn-with-stories-qa")
+    monkeypatch.setenv(
+        "CLOUDFLARE_QA_URL",
+        "https://another-worker.example.workers.dev",
+    )
+
+    with pytest.raises(ConfigurationError, match="does not match"):
+        Settings.from_environment()

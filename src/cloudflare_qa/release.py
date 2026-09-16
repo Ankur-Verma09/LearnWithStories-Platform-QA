@@ -3,7 +3,13 @@ from pathlib import Path
 import time
 import uuid
 
-from .errors import HealthCheckError, RollbackError
+from .errors import (
+    ConcurrentDeploymentError,
+    ConfigurationError,
+    HealthCheckError,
+    RollbackError,
+    classify_error,
+)
 
 
 @dataclass(frozen=True)
@@ -13,6 +19,7 @@ class ReleaseResult:
     previous_version_id: str | None
     rolled_back: bool
     error: str | None = None
+    error_type: str | None = None
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -47,9 +54,18 @@ class ReleaseController:
         expected_marker: str,
         health_timeout: float,
     ) -> ReleaseResult:
+        if health_timeout <= 0:
+            raise ConfigurationError("Health timeout must be greater than zero")
+        if not expected_marker.strip():
+            raise ConfigurationError("Expected release marker cannot be empty")
+
         previous = self.client.active_version()
         tag = f"qa-{uuid.uuid4().hex[:12]}"
         version_id = self.uploader.upload(fixture, worker_name, tag)
+        if self.client.active_version() != previous:
+            raise ConcurrentDeploymentError(
+                "Active version changed during upload; deployment was not activated"
+            )
         self.client.create_deployment(version_id, f"Activate {tag}")
 
         try:
@@ -57,9 +73,18 @@ class ReleaseController:
             self.probe.verify(expected_marker, health_timeout)
         except Exception as exc:
             if previous:
-                self.rollback(previous, str(exc))
-                return ReleaseResult("failed", version_id, previous, True, str(exc))
-            return ReleaseResult("failed", version_id, None, False, str(exc))
+                try:
+                    self.rollback(previous, str(exc))
+                except Exception as rollback_exc:
+                    raise RollbackError(
+                        f"Release failed: {exc}; rollback failed: {rollback_exc}"
+                    ) from rollback_exc
+                return ReleaseResult(
+                    "failed", version_id, previous, True, str(exc), classify_error(exc)
+                )
+            return ReleaseResult(
+                "failed", version_id, None, False, str(exc), classify_error(exc)
+            )
 
         return ReleaseResult("healthy", version_id, previous, False)
 

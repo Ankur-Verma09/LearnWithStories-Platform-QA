@@ -1,11 +1,12 @@
 import argparse
 import json
+import os
 from pathlib import Path
 import sys
 
 from .api import CloudflareClient
 from .config import Settings
-from .errors import ReleaseError
+from .errors import ReleaseError, classify_error
 from .health import HealthProbe
 from .release import ReleaseController
 from .wrangler import WranglerUploader
@@ -41,6 +42,18 @@ def _dependencies():
     return settings, client, controller
 
 
+def _add_alert(output: dict) -> dict:
+    error = output.get("error")
+    if not error:
+        return output
+    category = output.get("error_type") or "server_error"
+    output["alert"] = {"category": category, "message": error}
+    if os.getenv("GITHUB_ACTIONS") == "true":
+        safe_error = str(error).replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+        print(f"::error title={category}::{safe_error}", file=sys.stderr)
+    return output
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
@@ -62,9 +75,13 @@ def main(argv: list[str] | None = None) -> int:
             output = result.to_dict()
             code = 0 if result.status == "healthy" else 1
     except ReleaseError as exc:
-        output = {"status": "error", "error": str(exc)}
+        output = {
+            "status": "error",
+            "error": str(exc),
+            "error_type": classify_error(exc),
+        }
         code = 2
-    print(json.dumps(output, sort_keys=True))
+    print(json.dumps(_add_alert(output), sort_keys=True))
     return code
 
 

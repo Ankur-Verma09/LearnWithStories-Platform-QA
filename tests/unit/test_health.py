@@ -1,6 +1,6 @@
 import pytest
 
-from cloudflare_qa.errors import HealthCheckError
+from cloudflare_qa.errors import HealthCheckError, classify_error
 from cloudflare_qa.health import HealthProbe, HealthResponse
 
 
@@ -38,3 +38,15 @@ def test_rejects_wrong_release_marker():
 
     with pytest.raises(HealthCheckError, match="wrong release marker"):
         probe.verify("new", 2)
+
+
+def test_classifies_health_http_status_for_alerting():
+    probe = HealthProbe(
+        "https://qa.example",
+        lambda request, timeout: HealthResponse(404, "not found", {}),
+    )
+
+    with pytest.raises(HealthCheckError) as error:
+        probe.verify("healthy", 2)
+
+    assert classify_error(error.value) == "client_error"
