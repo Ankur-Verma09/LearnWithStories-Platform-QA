@@ -30,10 +30,9 @@ Install Python 3.11 and the test package through `uv`:
 & $uv python install 3.11
 & $uv venv --python 3.11 .venv
 & $uv pip install --python .\.venv\Scripts\python.exe -e ".[test]"
-.\.venv\Scripts\Activate.ps1
 ```
 
-Use `npx.cmd` throughout the demo. This bypasses the blocked `npx.ps1` wrapper without changing the Windows execution policy.
+Use `npx.cmd` and the executables under `.venv\Scripts` throughout the demo. This avoids blocked PowerShell scripts without changing the Windows execution policy.
 
 ## One-time QA Worker bootstrap
 
@@ -60,7 +59,7 @@ Open `docs/test-specification.md`. Point out the P0 cases for successful activat
 ### 2. Run the deterministic gate
 
 ```powershell
-pytest -m "not live" -q
+.\.venv\Scripts\python.exe -m pytest -m "not live" -q
 ```
 
 Expected result: all deterministic tests pass and live tests are deselected.
@@ -68,7 +67,7 @@ Expected result: all deterministic tests pass and live tests are deselected.
 ### 3. Demonstrate a successful release
 
 ```powershell
-cf-release deploy `
+.\.venv\Scripts\cf-release.exe deploy `
   --fixture fixtures/healthy `
   --expected-marker healthy `
   --timeout 10
@@ -77,7 +76,7 @@ cf-release deploy `
 The JSON output should report `healthy`, a new version ID, and `rolled_back: false`.
 
 ```powershell
-cf-release status
+.\.venv\Scripts\cf-release.exe status
 Invoke-RestMethod "$env:CLOUDFLARE_QA_URL/health"
 ```
 
@@ -86,7 +85,7 @@ The version reported by the CLI should be active, and the public endpoint should
 ### 4. Demonstrate partial failure and rollback
 
 ```powershell
-cf-release deploy `
+.\.venv\Scripts\cf-release.exe deploy `
   --fixture fixtures/unhealthy `
   --expected-marker unhealthy `
   --timeout 10
@@ -103,14 +102,14 @@ error: Health endpoint returned HTTP 500
 Confirm that the previous release is serving traffic again:
 
 ```powershell
-cf-release status
+.\.venv\Scripts\cf-release.exe status
 Invoke-RestMethod "$env:CLOUDFLARE_QA_URL/health"
 ```
 
 ### 5. Demonstrate timeout recovery
 
 ```powershell
-cf-release deploy `
+.\.venv\Scripts\cf-release.exe deploy `
   --fixture fixtures/slow `
   --expected-marker slow `
   --timeout 0.5
@@ -121,7 +120,7 @@ The command should report a timeout and `rolled_back: true`. The public health e
 ### 6. Run the complete live suite
 
 ```powershell
-pytest --run-live -m live -q --junitxml=reports/live-results.xml
+.\.venv\Scripts\python.exe -m pytest --run-live -m live -q --junitxml=reports/live-results.xml
 ```
 
 Show the JUnit file and the Cloudflare deployment history. The history should contain the attempted unhealthy and slow versions followed by deployments that restore the recorded healthy version.

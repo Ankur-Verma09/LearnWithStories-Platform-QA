@@ -93,10 +93,10 @@ $uv = "$env:LOCALAPPDATA\hermes\bin\uv.exe"
 & $uv python install 3.11
 & $uv venv --python 3.11 .venv
 & $uv pip install --python .\.venv\Scripts\python.exe -e ".[test]"
-.\.venv\Scripts\Activate.ps1
 ```
 
 PowerShell may block `npx.ps1` under a restricted execution policy. Use `npx.cmd` instead; changing the machine-wide execution policy is not required.
+If virtual-environment activation is also blocked, run `.\.venv\Scripts\python.exe` and `.\.venv\Scripts\cf-release.exe` directly as shown in the live demo runbook.
 
 Run the deterministic suite:
 
