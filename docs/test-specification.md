@@ -20,6 +20,11 @@ Prove that the Learn With Stories QA Worker can be released through a repeatable
 | R-10 | A health request exceeding its deadline must restore the previous version. | A hanging version remains active. |
 | R-11 | A failed release must return a nonzero CLI exit code and retain the original failure reason. | CI reports a false pass or loses diagnostic evidence. |
 | R-12 | Pull-request and live tests must run in CI with machine-readable results. | The suite cannot act as a release gate. |
+| R-13 | The configured URL must belong to the named QA Worker and timeouts must be positive. | An operator checks the wrong service or supplies invalid runtime input. |
+| R-14 | A release must stop if another deployment changes the active version during upload. | Competing releases overwrite each other or use an unsafe rollback target. |
+| R-15 | Cloudflare API and health-endpoint outages must fail the gate without being reported as application success. | A third-party outage produces a false pass. |
+| R-16 | A rollback failure must retain the original release error and the recovery error. | Operators cannot determine whether an unhealthy candidate remains active. |
+| R-17 | Deployment failures must be classified as client-side or server-side alerts. | CI reports a failure without a useful response owner. |
 
 ## Test cases
 
@@ -37,6 +42,14 @@ Prove that the Learn With Stories QA Worker can be released through a repeatable
 | TC-10 | P1 | Health endpoint returns a different marker. | Verification fails even though HTTP status is `200`. | `test_rejects_wrong_release_marker` |
 | TC-11 | P1 | First deployment fails and no baseline exists. | Failure is reported without claiming a rollback occurred. | `test_reports_failure_without_rollback_when_no_baseline_exists` |
 | TC-12 | P1 | Create a single-version deployment. | Request assigns 100% of traffic to the candidate. | `test_creates_single_version_deployment` |
+| TC-13 | P0 | QA URL names a different Worker. | Configuration is rejected before a Cloudflare call. | `test_rejects_url_for_a_different_worker` |
+| TC-14 | P1 | Timeout is zero or negative, or the expected marker is empty. | Input is rejected before a Cloudflare call. | `test_rejects_nonpositive_timeout_before_cloudflare_call`, `test_rejects_empty_expected_marker_before_cloudflare_call` |
+| TC-15 | P0 | Active version changes while the candidate uploads. | Candidate is not activated and the competing release is not overwritten. | `test_stops_when_another_deployment_changes_active_version` |
+| TC-16 | P0 | Health endpoint is unavailable after activation. | Previous version is restored and a server alert is produced. | `test_rolls_back_when_health_endpoint_is_unavailable` |
+| TC-17 | P0 | Cloudflare is unavailable during rollback. | Operation fails loudly and reports both the release and rollback errors. | `test_reports_original_error_when_rollback_fails` |
+| TC-18 | P1 | Cloudflare API request times out. | Timeout is surfaced as a provider-side error. | `test_reports_cloudflare_timeout` |
+| TC-19 | P1 | Invalid configuration or provider failure reaches the CLI. | JSON contains a client/server alert and CI receives an error annotation. | `test_configuration_error_generates_client_alert`, `test_cloudflare_outage_generates_server_alert` |
+| TC-20 | P1 | Token is valid but lacks the required Worker permission. | Deployment stops and reports a client-side permission alert. | `test_insufficient_permission_generates_client_alert` |
 
 ## Traceability summary
 
@@ -49,11 +62,16 @@ Prove that the Learn With Stories QA Worker can be released through a repeatable
 | R-05 | TC-04, TC-08 |
 | R-06 | TC-04, TC-09, TC-10 |
 | R-07 | TC-09 and live security-header assertions |
-| R-08 | TC-07 and `test_invalid_token_is_rejected_by_cloudflare` |
+| R-08 | TC-07, TC-20, and `test_invalid_token_is_rejected_by_cloudflare` |
 | R-09 | TC-05 |
 | R-10 | TC-06 |
 | R-11 | `test_failed_release_returns_nonzero_exit_code`, `test_healthy_release_returns_success` |
 | R-12 | `.github/workflows/quality-gate.yml` |
+| R-13 | TC-13, TC-14 |
+| R-14 | TC-15 |
+| R-15 | TC-16, TC-18 |
+| R-16 | TC-17 |
+| R-17 | TC-19 and failed-release CLI assertions |
 
 ## Failure injection
 
@@ -82,6 +100,7 @@ Exit criteria:
 - no test leaves an unhealthy or slow version active;
 - JUnit results are attached to the workflow;
 - any rollback failure blocks the release and requires manual recovery.
+- every failure identifies whether the first response belongs with the caller/configuration or the deployed service/provider.
 
 ## Deliberate exclusions
 

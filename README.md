@@ -49,6 +49,10 @@ The automated suite covers:
 - a health-check timeout;
 - automatic restoration of the previous version;
 - preservation of the failure that caused the rollback;
+- Cloudflare API timeouts and unavailable-service responses;
+- rollback failure with both failure reasons retained;
+- concurrent deployment detection before traffic changes;
+- client-side and server-side alert classification;
 - protection against accidentally targeting the production Worker.
 
 The detailed requirements, cases, priorities, and automation links are in [docs/test-specification.md](docs/test-specification.md).
@@ -178,6 +182,7 @@ Restore a known version:
 ```
 
 Every command prints one JSON document and returns a nonzero exit code on failure. Tokens are never included in command output.
+Failures include an `alert` object classified as `client_error` or `server_error`. In GitHub Actions, the same failure is emitted as an error annotation so it is visible on the workflow summary.
 
 ## CI release gates
 

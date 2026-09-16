@@ -6,5 +6,5 @@ I would also add Cloudflare Access coverage with a dedicated service token, incl
 
 The private path deserves a controlled integration environment of its own. With a disposable backend and tunnel, the suite could interrupt the upstream connection and verify the Worker's `DELL_API_UNAVAILABLE` response, recovery after the tunnel reconnects, and the absence of leaked internal error details.
 
-Longer-running work would include concurrent deployment requests, API rate-limit handling, retry backoff, browser smoke tests, performance thresholds, and scheduled checks from more than one region.
+Longer-running work would include API rate-limit handling, retry backoff with jitter, browser smoke tests, performance thresholds, and scheduled checks from more than one region. The current suite detects a competing deployment and stops; a future version could coordinate releases with a durable lock instead.
 
