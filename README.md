@@ -98,13 +98,13 @@ $uv = "$env:LOCALAPPDATA\hermes\bin\uv.exe"
 PowerShell may block `npx.ps1` under a restricted execution policy. Use `npx.cmd` instead; changing the machine-wide execution policy is not required.
 If virtual-environment activation is also blocked, run `.\.venv\Scripts\python.exe` and `.\.venv\Scripts\cf-release.exe` directly as shown in the live demo runbook.
 
-Run the deterministic suite:
+Confirm Wrangler can access the selected Cloudflare account:
 
 ```powershell
-pytest -m "not live"
+npx.cmd --yes wrangler@4.37.1 whoami
 ```
 
-The first live run needs a QA Worker. The controller can create the script during the first Wrangler upload. Set the credentials only in the current shell:
+Set the live-test configuration only in the current shell:
 
 ```powershell
 $env:CLOUDFLARE_ACCOUNT_ID = "your-account-id"
@@ -118,19 +118,40 @@ Do not place a token in `.env`, a Wrangler configuration file, test output, or s
 Bootstrap the QA Worker with the healthy fixture:
 
 ```powershell
-cf-release deploy --fixture fixtures/healthy --expected-marker healthy --timeout 15
+npx.cmd --yes wrangler@4.37.1 deploy `
+  --config fixtures/healthy/wrangler.jsonc `
+  --name learn-with-stories-qa
+```
+
+Confirm the public endpoint is serving the healthy release:
+
+```powershell
+Invoke-RestMethod -Uri "$($env:CLOUDFLARE_QA_URL)/health"
+```
+
+Run the deterministic suite:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest -m "not live" -q
 ```
 
 Run the live suite:
 
 ```powershell
-pytest --run-live -m live --junitxml=reports/live-results.xml
+.\.venv\Scripts\python.exe -m pytest `
+  --run-live `
+  -m live `
+  -v `
+  --junitxml=reports/live-results.xml
 ```
 
 Generate a local HTML report when required:
 
 ```powershell
-pytest -m "not live" --html=reports/unit-report.html --self-contained-html
+.\.venv\Scripts\python.exe -m pytest `
+  -m "not live" `
+  --html=reports/unit-report.html `
+  --self-contained-html
 ```
 
 ## Command-line interface
@@ -138,19 +159,22 @@ pytest -m "not live" --html=reports/unit-report.html --self-contained-html
 Deploy and verify a fixture:
 
 ```powershell
-cf-release deploy --fixture fixtures/healthy --expected-marker healthy --timeout 15
+.\.venv\Scripts\cf-release.exe deploy `
+  --fixture fixtures/healthy `
+  --expected-marker healthy `
+  --timeout 15
 ```
 
 Inspect the current Cloudflare deployment:
 
 ```powershell
-cf-release status
+.\.venv\Scripts\cf-release.exe status
 ```
 
 Restore a known version:
 
 ```powershell
-cf-release rollback --version-id <version-id>
+.\.venv\Scripts\cf-release.exe rollback --version-id <version-id>
 ```
 
 Every command prints one JSON document and returns a nonzero exit code on failure. Tokens are never included in command output.
