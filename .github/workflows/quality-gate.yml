@@ -1,0 +1,68 @@
+name: Platform QA
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quality-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install test dependencies
+        run: python -m pip install -e ".[test]"
+      - name: Run deterministic tests
+        run: pytest -m "not live" --junitxml=reports/unit-results.xml
+      - name: Upload test result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-result
+          path: reports/unit-results.xml
+          if-no-files-found: error
+
+  cloudflare-live:
+    if: github.event_name == 'workflow_dispatch'
+    needs: quality-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: cloudflare-qa
+    concurrency:
+      group: learn-with-stories-cloudflare-qa
+      cancel-in-progress: false
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_QA_WORKER_NAME: ${{ secrets.CLOUDFLARE_QA_WORKER_NAME }}
+      CLOUDFLARE_QA_URL: ${{ secrets.CLOUDFLARE_QA_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install test dependencies
+        run: python -m pip install -e ".[test]"
+      - name: Run live release tests
+        run: pytest --run-live -m live --junitxml=reports/live-results.xml
+      - name: Upload live test result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-test-result
+          path: reports/live-results.xml
+          if-no-files-found: error
+
