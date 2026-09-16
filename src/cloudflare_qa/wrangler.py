@@ -45,6 +45,8 @@ class WranglerUploader:
             command,
             cwd=fixture,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             capture_output=True,
             check=False,
         )

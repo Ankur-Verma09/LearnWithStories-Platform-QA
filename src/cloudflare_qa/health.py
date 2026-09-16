@@ -46,7 +46,13 @@ class HealthProbe:
         self.transport = transport
 
     def verify(self, expected_marker: str, timeout: float) -> HealthResponse:
-        request = Request(self.url, headers={"Accept": "application/json"})
+        request = Request(
+            self.url,
+            headers={
+                "Accept": "application/json",
+                "User-Agent": "LearnWithStories-Platform-QA/1.0",
+            },
+        )
         response = self.transport(request, timeout)
         if response.status != 200:
             raise HealthCheckError(f"Health endpoint returned HTTP {response.status}")
@@ -57,4 +63,3 @@ class HealthProbe:
         if payload.get("release") != expected_marker:
             raise HealthCheckError("Health endpoint returned the wrong release marker")
         return response
-

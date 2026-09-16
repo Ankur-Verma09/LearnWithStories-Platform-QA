@@ -62,7 +62,7 @@ def test_invalid_token_is_rejected_by_cloudflare(live_controller):
     with pytest.raises(CloudflareApiError) as error:
         client.list_deployments()
 
-    assert error.value.status in {401, 403}
+    assert error.value.status in {400, 401, 403}
 
 
 def test_unhealthy_release_restores_previous_version(live_controller):

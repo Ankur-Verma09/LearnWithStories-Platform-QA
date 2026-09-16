@@ -27,9 +27,11 @@ def test_rejects_incomplete_fixture():
 
 def test_returns_uploaded_version_after_it_appears():
     commands = []
+    options = []
 
     def run(command, **kwargs):
         commands.append(command)
+        options.append(kwargs)
         return subprocess.CompletedProcess(command, 0, "uploaded", "")
 
     uploader = WranglerUploader(Client([None, "version-2"]), run, sleeper=lambda _: None)
@@ -39,6 +41,8 @@ def test_returns_uploaded_version_after_it_appears():
     assert version == "version-2"
     assert "versions" in commands[0]
     assert "upload" in commands[0]
+    assert options[0]["encoding"] == "utf-8"
+    assert options[0]["errors"] == "replace"
 
 
 def test_surfaces_wrangler_failure():
