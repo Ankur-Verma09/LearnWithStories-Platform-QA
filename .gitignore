@@ -6,4 +6,4 @@ __pycache__/
 reports/*.xml
 reports/*.html
 node_modules/
-
+work/
