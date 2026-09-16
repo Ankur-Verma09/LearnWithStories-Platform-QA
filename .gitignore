@@ -1,5 +1,6 @@
 .env
 .pytest_cache/
+pytest-cache-files-*/
 __pycache__/
 *.egg-info/
 .venv/
@@ -7,3 +8,4 @@ reports/*.xml
 reports/*.html
 node_modules/
 work/
+uv.lock
