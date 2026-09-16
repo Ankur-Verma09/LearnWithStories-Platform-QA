@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import os
 
 from .errors import ConfigurationError
@@ -7,7 +7,7 @@ from .errors import ConfigurationError
 @dataclass(frozen=True)
 class Settings:
     account_id: str
-    api_token: str
+    api_token: str = field(repr=False)
     worker_name: str
     worker_url: str
 
@@ -28,4 +28,3 @@ class Settings:
         if not values["worker_url"].startswith("https://"):
             raise ConfigurationError("CLOUDFLARE_QA_URL must use HTTPS")
         return cls(**values)
-

@@ -14,6 +14,7 @@ def test_reads_qa_configuration(monkeypatch):
 
     assert settings.worker_name == "learn-with-stories-qa"
     assert settings.worker_url == "https://qa.example.workers.dev"
+    assert "token" not in repr(settings)
 
 
 def test_rejects_production_worker(monkeypatch):
@@ -40,4 +41,3 @@ def test_reports_all_missing_configuration(monkeypatch):
 
     assert "account_id" in str(error.value)
     assert "api_token" in str(error.value)
-
