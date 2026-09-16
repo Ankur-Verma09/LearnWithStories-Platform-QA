@@ -1,5 +1,7 @@
 # What I would test next
 
+The wider production quality plan is maintained separately in [future-production-test-strategy.md](future-production-test-strategy.md). It is a proposed strategy, not coverage claimed by the current assessment.
+
 The next step would be a gradual release test that sends a small percentage of traffic to a candidate version and verifies version affinity before promotion. That needs careful request identification so the test does not mistake normal traffic distribution for a routing defect.
 
 I would also add Cloudflare Access coverage with a dedicated service token, including missing credentials, an invalid audience, an expired token, and an authorized request. The current suite deliberately avoids changing the production Access policy.

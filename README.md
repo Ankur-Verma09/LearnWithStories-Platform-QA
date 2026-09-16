@@ -57,6 +57,7 @@ The automated suite covers:
 
 The detailed requirements, cases, priorities, and automation links are in [docs/test-specification.md](docs/test-specification.md).
 The presentation sequence is documented in [docs/live-demo.md](docs/live-demo.md).
+Broader Telegram, model, memory, scheduler, quiz-quality, and disaster-recovery requirements are captured as an unimplemented future strategy in [docs/future-production-test-strategy.md](docs/future-production-test-strategy.md).
 
 ## Repository layout
 
