@@ -4,6 +4,7 @@ import pytest
 
 from cloudflare_qa.api import CloudflareClient
 from cloudflare_qa.config import Settings
+from cloudflare_qa.errors import CloudflareApiError
 from cloudflare_qa.health import HealthProbe
 from cloudflare_qa.release import ReleaseController
 from cloudflare_qa.wrangler import WranglerUploader
@@ -52,6 +53,16 @@ def test_successful_release_is_active_and_serving(live_controller):
     response = controller.probe.verify("healthy", 10)
     assert response.headers["x-content-type-options"] == "nosniff"
     assert response.headers["x-frame-options"] == "DENY"
+
+
+def test_invalid_token_is_rejected_by_cloudflare(live_controller):
+    settings, _, _ = live_controller
+    client = CloudflareClient(settings.account_id, "invalid-token", settings.worker_name)
+
+    with pytest.raises(CloudflareApiError) as error:
+        client.list_deployments()
+
+    assert error.value.status in {401, 403}
 
 
 def test_unhealthy_release_restores_previous_version(live_controller):

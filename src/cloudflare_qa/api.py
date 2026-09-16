@@ -99,8 +99,7 @@ class CloudflareClient:
     def version_with_tag(self, tag: str) -> str | None:
         for version in self.list_versions():
             metadata = version.get("metadata") or {}
-            annotations = metadata.get("annotations") or {}
+            annotations = metadata.get("annotations") or version.get("annotations") or {}
             if annotations.get("workers/tag") == tag:
                 return version.get("id")
         return None
-
