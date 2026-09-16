@@ -52,6 +52,7 @@ The automated suite covers:
 - protection against accidentally targeting the production Worker.
 
 The detailed requirements, cases, priorities, and automation links are in [docs/test-specification.md](docs/test-specification.md).
+The presentation sequence is documented in [docs/live-demo.md](docs/live-demo.md).
 
 ## Repository layout
 
@@ -175,4 +176,3 @@ This suite validates a single Worker at 100% traffic. It does not change the pro
 ## Submission notes
 
 The repository should be submitted with its commit history and the exported AI conversation requested by the assessment. Add the complete exported conversation to `docs/ai-interaction-log.md` before submission; the decision record currently in that file is not a substitute for the verbatim export.
-
